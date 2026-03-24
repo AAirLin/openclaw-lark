@@ -121,13 +121,15 @@ const plugin = {
     // Register OAuth batch auth tool (batch authorization for all app scopes)
     registerFeishuOAuthBatchAuthTool(api);
 
-    // ---- Tool call hooks (auto-trace AI tool invocations) ----
+    // ---- Tool call hooks (trace Feishu-owned tool invocations only) ----
 
     api.on('before_tool_call', (event) => {
+      if (!event.toolName.startsWith('feishu_')) return;
       log.info(`tool call: ${event.toolName} params=${JSON.stringify(event.params)}`);
     });
 
     api.on('after_tool_call', (event) => {
+      if (!event.toolName.startsWith('feishu_')) return;
       if (event.error) {
         log.error(`tool fail: ${event.toolName} ${event.error} (${event.durationMs ?? 0}ms)`);
       } else {
