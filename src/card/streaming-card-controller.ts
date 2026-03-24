@@ -15,36 +15,52 @@ import { SILENT_REPLY_TOKEN } from 'openclaw/plugin-sdk/reply-runtime';
 import type { ReplyPayload } from 'openclaw/plugin-sdk';
 import { extractLarkApiCode } from '../core/api-error';
 import { larkLogger } from '../core/lark-logger';
+import { registerShutdownHook } from '../core/shutdown-hooks';
 import { sendCardFeishu, updateCardFeishu } from '../messaging/outbound/send';
+import { buildCardContent, STREAMING_ELEMENT_ID, splitReasoningText, stripReasoningTags, toCardKit2 } from './builder';
+import {
+  FEISHU_CARD_TABLE_LIMIT,
+  isCardRateLimitError,
+  isCardTableLimitError,
+  sanitizeTextSegmentsForCard,
+} from './card-error';
 import {
   createCardEntity,
   sendCardByCardId,
+  setCardStreamingMode,
   streamCardContent,
   updateCardKitCard,
-  setCardStreamingMode,
 } from './cardkit';
-import { buildCardContent, splitReasoningText, stripReasoningTags, STREAMING_ELEMENT_ID, toCardKit2 } from './builder';
-import { optimizeMarkdownStyle } from './markdown-style';
-import { ImageResolver } from './image-resolver';
-import { registerShutdownHook } from '../core/shutdown-hooks';
 import { FlushController } from './flush-controller';
-import { UnavailableGuard } from './unavailable-guard';
+import { ImageResolver } from './image-resolver';
+import { optimizeMarkdownStyle } from './markdown-style';
 import type {
-  CardPhase,
-  TerminalReason,
-  ReasoningState,
-  StreamingTextState,
   CardKitState,
+  CardPhase,
+  ReasoningState,
   StreamingCardDeps,
+  StreamingTextState,
+  TerminalReason,
 } from './reply-dispatcher-types';
 import {
-  TERMINAL_PHASES,
-  PHASE_TRANSITIONS,
-  THROTTLE_CONSTANTS,
   EMPTY_REPLY_FALLBACK_TEXT,
+  PHASE_TRANSITIONS,
+  TERMINAL_PHASES,
+  THROTTLE_CONSTANTS,
 } from './reply-dispatcher-types';
+import { UnavailableGuard } from './unavailable-guard';
 
 const log = larkLogger('card/streaming');
+
+interface TerminalCardTextImageResolver {
+  resolveImages(text: string): string;
+}
+
+interface TerminalCardContentInput {
+  text: string;
+  reasoningText?: string;
+}
+
 // ---------------------------------------------------------------------------
 // CardKit 2.0 initial streaming payload
 // ---------------------------------------------------------------------------
@@ -53,6 +69,7 @@ const STREAMING_THINKING_CARD = {
   schema: '2.0',
   config: {
     streaming_mode: true,
+    // locales 用于支持多语言摘要展示
     locales: ['zh_cn', 'en_us'],
     summary: {
       content: 'Thinking...',
@@ -376,10 +393,16 @@ export class StreamingCardController {
         const rawErrorText = this.text.accumulatedText
           ? `${this.text.accumulatedText}\n\n---\n**Error**: An error occurred while generating the response.`
           : '**Error**: An error occurred while generating the response.';
-        const errorText = this.imageResolver.resolveImages(rawErrorText);
+        const terminalContent = prepareTerminalCardContent(
+          {
+            text: rawErrorText,
+            reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          },
+          this.imageResolver,
+        );
         const errorCard = buildCardContent('complete', {
-          text: errorText,
-          reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          text: terminalContent.text,
+          reasoningText: terminalContent.reasoningText,
           reasoningElapsedMs: this.reasoning.reasoningElapsedMs || undefined,
           elapsedMs: this.elapsed(),
           isError: true,
@@ -444,11 +467,20 @@ export class StreamingCardController {
           log.warn('reply completed without visible text, using empty-reply fallback');
         }
 
+        // 等待图片异步解析（最多 15s），避免终态卡片留占位符
         const resolvedDisplayText = await this.imageResolver.resolveImagesAwait(displayText, 15_000);
 
+        const terminalContent = prepareTerminalCardContent(
+          {
+            text: resolvedDisplayText,
+            reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          },
+          this.imageResolver,
+        );
+
         const completeCard = buildCardContent('complete', {
-          text: resolvedDisplayText,
-          reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          text: terminalContent.text,
+          reasoningText: terminalContent.reasoningText,
           reasoningElapsedMs: this.reasoning.reasoningElapsedMs || undefined,
           elapsedMs: this.elapsed(),
           footer: this.deps.resolvedFooter,
@@ -511,10 +543,16 @@ export class StreamingCardController {
       const effectiveCardId = this.cardKit.cardKitCardId ?? this.cardKit.originalCardKitCardId;
       if (effectiveCardId) {
         const elapsedMs = Date.now() - this.dispatchStartTime;
-        const abortText = this.imageResolver.resolveImages(this.text.accumulatedText || 'Aborted.');
+        const terminalContent = prepareTerminalCardContent(
+          {
+            text: this.text.accumulatedText || 'Aborted.',
+            reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          },
+          this.imageResolver,
+        );
         const abortCardContent = buildCardContent('complete', {
-          text: abortText,
-          reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          text: terminalContent.text,
+          reasoningText: terminalContent.reasoningText,
           reasoningElapsedMs: this.reasoning.reasoningElapsedMs || undefined,
           elapsedMs,
           isAborted: true,
@@ -525,10 +563,16 @@ export class StreamingCardController {
       } else if (this.cardKit.cardMessageId) {
         // IM fallback: 卡片不是通过 CardKit 发的，用 im.message.patch 更新
         const elapsedMs = Date.now() - this.dispatchStartTime;
-        const abortText = this.imageResolver.resolveImages(this.text.accumulatedText || 'Aborted.');
+        const terminalContent = prepareTerminalCardContent(
+          {
+            text: this.text.accumulatedText || 'Aborted.',
+            reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          },
+          this.imageResolver,
+        );
         const abortCard = buildCardContent('complete', {
-          text: abortText,
-          reasoningText: this.reasoning.accumulatedReasoningText || undefined,
+          text: terminalContent.text,
+          reasoningText: terminalContent.reasoningText,
           reasoningElapsedMs: this.reasoning.reasoningElapsedMs || undefined,
           elapsedMs,
           isAborted: true,
@@ -540,7 +584,9 @@ export class StreamingCardController {
           card: abortCard as unknown as Record<string, unknown>,
           accountId: this.deps.accountId,
         });
-        log.info('abortCard completed (IM fallback)', { messageId: this.cardKit.cardMessageId });
+        log.info('abortCard completed (IM fallback)', {
+          messageId: this.cardKit.cardMessageId,
+        });
       }
     } catch (err) {
       log.warn('abortCard failed', { error: String(err) });
@@ -663,7 +709,9 @@ export class StreamingCardController {
         if (this.guard.terminate('ensureCardCreated.outer', err)) {
           return;
         }
-        log.warn('thinking card failed, falling back to static', { error: String(err) });
+        log.warn('thinking card failed, falling back to static', {
+          error: String(err),
+        });
         this.transition('creation_failed', 'ensureCardCreated.outer', 'creation_failed');
       }
     })();
@@ -691,6 +739,7 @@ export class StreamingCardController {
 
     try {
       const displayText = this.buildDisplayText();
+      // 流式中间帧使用同步 resolveImages（不等待异步上传）
       const resolvedText = this.imageResolver.resolveImages(displayText);
 
       if (this.cardKit.cardKitCardId) {
@@ -727,10 +776,21 @@ export class StreamingCardController {
 
       const apiCode = extractLarkApiCode(err);
 
-      if (apiCode === 230020) {
+      // 速率限制（230020）— 跳过此帧，不降级
+      if (isCardRateLimitError(err)) {
         log.info('flushCardUpdate: rate limited (230020), skipping', {
           seq: this.cardKit.cardKitSequence,
         });
+        return;
+      }
+
+      // 卡片表格数超出飞书限制（230099/11310）— 禁用 CardKit 流式，
+      // 保留 originalCardKitCardId 供 onIdle 做最终 CardKit 更新
+      if (isCardTableLimitError(err)) {
+        log.warn('flushCardUpdate: card table limit exceeded (230099/11310), disabling CardKit streaming', {
+          seq: this.cardKit.cardKitSequence,
+        });
+        this.cardKit.cardKitCardId = null;
         return;
       }
 
@@ -809,6 +869,32 @@ export class StreamingCardController {
 // ---------------------------------------------------------------------------
 // Error detail extraction helpers (replacing `any` casts)
 // ---------------------------------------------------------------------------
+
+/**
+ * 终态卡片的正文和 reasoning 都会被飞书按 markdown 渲染，
+ * 因此两者都要先做图片替换与表格降级，避免再次撞到 230099/11310。
+ */
+export function prepareTerminalCardContent(
+  content: TerminalCardContentInput,
+  imageResolver: TerminalCardTextImageResolver,
+  tableLimit: number = FEISHU_CARD_TABLE_LIMIT,
+): TerminalCardContentInput {
+  const resolvedReasoningText = content.reasoningText ? imageResolver.resolveImages(content.reasoningText) : undefined;
+  const resolvedText = imageResolver.resolveImages(content.text);
+  const sanitizedSegments = sanitizeTextSegmentsForCard(
+    resolvedReasoningText ? [resolvedReasoningText, resolvedText] : [resolvedText],
+    tableLimit,
+  );
+
+  if (resolvedReasoningText) {
+    return {
+      reasoningText: sanitizedSegments[0],
+      text: sanitizedSegments[1],
+    };
+  }
+
+  return { text: sanitizedSegments[0] };
+}
 
 function extractApiDetail(err: unknown): string {
   if (!err || typeof err !== 'object') return String(err);
