@@ -46,6 +46,7 @@ import {
 import { type DispatchContext, buildDispatchContext, resolveThreadSessionKey } from './dispatch-context';
 import type { PermissionError } from './permission';
 import { mentionedBot } from './mention';
+import { resolveRespondToMentionAll } from './gate';
 
 const log = larkLogger('inbound/dispatch');
 
@@ -268,7 +269,14 @@ export async function dispatchToAgent(params: {
     senderName: params.ctx.senderName ?? params.ctx.senderId,
     senderId: params.ctx.senderId,
     messageSid: params.ctx.messageId,
-    wasMentioned: mentionedBot(params.ctx),
+    wasMentioned:
+      mentionedBot(params.ctx) ||
+      (params.ctx.mentionAll &&
+        resolveRespondToMentionAll({
+          groupConfig: params.groupConfig,
+          defaultConfig: params.defaultGroupConfig,
+          accountFeishuCfg: params.account.config,
+        })),
     replyToBody: params.quotedContent,
     inboundHistory,
     extraFields: {

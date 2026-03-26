@@ -139,6 +139,7 @@ const DmConfigSchema = z
 export const FeishuGroupSchema = z.object({
   groupPolicy: GroupPolicyEnum.optional(),
   requireMention: z.boolean().optional(),
+  respondToMentionAll: z.boolean().optional(),
   tools: ToolPolicySchema,
   skills: z.array(z.string()).optional(),
   enabled: z.boolean().optional(),
@@ -166,6 +167,7 @@ export const FeishuAccountConfigSchema = z.object({
   groupPolicy: GroupPolicyEnum.optional(),
   groupAllowFrom: AllowFromSchema,
   requireMention: z.boolean().optional(),
+  respondToMentionAll: z.boolean().optional(),
   groups: z.record(z.string(), FeishuGroupSchema).optional(),
   historyLimit: z.number().optional(),
   dmHistoryLimit: z.number().optional(),

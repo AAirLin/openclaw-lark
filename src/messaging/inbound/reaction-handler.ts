@@ -212,7 +212,7 @@ export async function handleFeishuReaction(params: {
 
   // ---- Step B: Build MessageContext directly ----
   const excerpt =
-    preResolved.msg.content.length > 200 ? preResolved.msg.content.slice(0, 200) + '…' : preResolved.msg.content;
+    preResolved.msg.content.length > 200 ? `${preResolved.msg.content.slice(0, 200)}…` : preResolved.msg.content;
   const syntheticText = excerpt
     ? `[reacted with ${emojiType} to message ${messageId}: "${excerpt}"]`
     : `[reacted with ${emojiType} to message ${messageId}]`;
@@ -227,6 +227,7 @@ export async function handleFeishuReaction(params: {
     contentType: 'text',
     resources: [],
     mentions: [],
+    mentionAll: false,
     threadId: preResolved.threadId,
     rawMessage: {
       message_id: syntheticMessageId,
