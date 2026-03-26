@@ -67,9 +67,11 @@ const SUPPORTED_ACTIONS: Set<ChannelMessageActionName> = new Set([
 function parseCardParam(raw: unknown): Record<string, unknown> | undefined {
   if (raw == null) return undefined;
 
-  // Already a non-array object — use directly.
+  // Already a non-array object — use directly (empty {} is never a valid card).
   if (typeof raw === 'object' && !Array.isArray(raw)) {
-    return raw as Record<string, unknown>;
+    const obj = raw as Record<string, unknown>;
+    if (Object.keys(obj).length === 0) return undefined;
+    return obj;
   }
 
   // String — attempt JSON.parse.
