@@ -167,7 +167,22 @@ export type ToolActionKey =
   | 'feishu_approval_task.query'
   | 'feishu_approval_task.approve'
   | 'feishu_approval_task.reject'
-  | 'feishu_approval_task.transfer';
+  | 'feishu_approval_task.transfer'
+  | 'feishu_mail_message.list'
+  | 'feishu_mail_message.get'
+  | 'feishu_mail_message.search'
+  | 'feishu_mail_message.send'
+  | 'feishu_mail_message.reply'
+  | 'feishu_mail_draft.create'
+  | 'feishu_mail_draft.get'
+  | 'feishu_mail_draft.update'
+  | 'feishu_mail_draft.send'
+  | 'feishu_mail_draft.delete'
+  | 'feishu_mail_draft.list'
+  | 'feishu_minutes_minute.get'
+  | 'feishu_minutes_minute.statistics'
+  | 'feishu_vc_meeting_record.search'
+  | 'feishu_vc_meeting_record.get';
 /**
  * Tool Scope 映射类型
  *
@@ -358,6 +373,29 @@ export const TOOL_SCOPES: ToolScopeMapping = {
   'feishu_approval_task.approve': ['approval:approval'],
   'feishu_approval_task.reject': ['approval:approval'],
   'feishu_approval_task.transfer': ['approval:approval'],
+
+  // Mail message tools
+  'feishu_mail_message.list': ['mail:user_mailbox.message:readonly'],
+  'feishu_mail_message.get': ['mail:user_mailbox.message:readonly'],
+  'feishu_mail_message.search': ['mail:user_mailbox.message:readonly'],
+  'feishu_mail_message.send': ['mail:user_mailbox.message:write_only'],
+  'feishu_mail_message.reply': ['mail:user_mailbox.message:write_only'],
+
+  // Mail draft tools
+  'feishu_mail_draft.create': ['mail:user_mailbox.message:write_only'],
+  'feishu_mail_draft.get': ['mail:user_mailbox.message:readonly'],
+  'feishu_mail_draft.update': ['mail:user_mailbox.message:write_only'],
+  'feishu_mail_draft.send': ['mail:user_mailbox.message:write_only'],
+  'feishu_mail_draft.delete': ['mail:user_mailbox.message:write_only'],
+  'feishu_mail_draft.list': ['mail:user_mailbox.message:readonly'],
+
+  // Minutes tools
+  'feishu_minutes_minute.get': ['minutes:minute:readonly'],
+  'feishu_minutes_minute.statistics': ['minutes:minute:readonly'],
+
+  // VC meeting record tools
+  'feishu_vc_meeting_record.search': ['vc:meeting_list:readonly'],
+  'feishu_vc_meeting_record.get': ['vc:meeting_list:readonly'],
 } as const;
 
 // ===== 必需的应用身份权限 =====

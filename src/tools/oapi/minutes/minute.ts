@@ -85,7 +85,7 @@ export function registerFeishuMinutesMinuteTool(api: OpenClawPluginApi) {
               const res = await client.invoke(
                 'feishu_minutes_minute.get',
                 (sdk, opts) =>
-                  sdk.minutes.minute.get(
+                  sdk.minutes.v1.minute.get(
                     {
                       path: { minute_token: p.minute_token },
                     },
@@ -117,7 +117,7 @@ export function registerFeishuMinutesMinuteTool(api: OpenClawPluginApi) {
               const res = await client.invoke(
                 'feishu_minutes_minute.statistics',
                 (sdk, opts) =>
-                  sdk.minutes.minuteStatistics.get(
+                  sdk.minutes.v1.minuteStatistics.get(
                     {
                       path: { minute_token: p.minute_token },
                     },

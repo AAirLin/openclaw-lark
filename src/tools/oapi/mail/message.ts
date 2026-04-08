@@ -17,6 +17,7 @@
 import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
 import { Type } from '@sinclair/typebox';
 import { json, createToolContext, assertLarkOk, handleInvokeErrorWithAutoAuth, registerTool } from '../helpers';
+import type { ToolClient } from '../helpers';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -230,7 +231,7 @@ export function registerFeishuMailMessageTool(api: OpenClawPluginApi) {
                       path: { user_mailbox_id: mailboxId },
                       params: {
                         folder_id: folderId,
-                        page_size: p.page_size,
+                        page_size: p.page_size ?? 20,
                         page_token: p.page_token,
                       },
                     },
@@ -306,23 +307,20 @@ export function registerFeishuMailMessageTool(api: OpenClawPluginApi) {
                 `search: mailbox=${mailboxId}, query="${p.query}", page_size=${p.page_size ?? 'default'}, page_token=${p.page_token ?? 'none'}`,
               );
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_message.search',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessage.search(
-                    {
-                      path: { user_mailbox_id: mailboxId },
-                      data: {
-                        query: p.query,
-                      },
-                      params: {
-                        page_size: p.page_size,
-                        page_token: p.page_token,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/search`,
+                {
+                  method: 'POST',
+                  body: {
+                    query: p.query,
+                  },
+                  query: {
+                    ...(p.page_size != null ? { page_size: String(p.page_size) } : {}),
+                    ...(p.page_token ? { page_token: p.page_token } : {}),
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -364,11 +362,11 @@ export function registerFeishuMailMessageTool(api: OpenClawPluginApi) {
                     {
                       path: { user_mailbox_id: mailboxId },
                       data: {
-                        to: p.to,
+                        to: p.to.map((r) => ({ mail_address: r.email })),
                         subject: p.subject,
                         body_html: p.body_html,
                         body_plain_text: p.body_plain_text,
-                        cc: p.cc,
+                        cc: p.cc?.map((r) => ({ mail_address: r.email })),
                       },
                     },
                     opts,
@@ -399,24 +397,18 @@ export function registerFeishuMailMessageTool(api: OpenClawPluginApi) {
                 `reply: mailbox=${mailboxId}, message_id=${p.message_id}, reply_all=${p.reply_all ?? false}`,
               );
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_message.reply',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessage.reply(
-                    {
-                      path: {
-                        user_mailbox_id: mailboxId,
-                        message_id: p.message_id,
-                      },
-                      data: {
-                        body_html: p.body_html,
-                        body_plain_text: p.body_plain_text,
-                        reply_all: p.reply_all,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/${encodeURIComponent(p.message_id)}/reply`,
+                {
+                  method: 'POST',
+                  body: {
+                    body_html: p.body_html,
+                    body_plain_text: p.body_plain_text,
+                    reply_all: p.reply_all,
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 

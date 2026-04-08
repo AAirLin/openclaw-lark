@@ -107,22 +107,20 @@ export function registerFeishuVcMeetingRecordTool(api: OpenClawPluginApi) {
                 `search: keyword="${p.keyword ?? ''}", start_time=${p.start_time ?? 'none'}, end_time=${p.end_time ?? 'none'}, page_size=${p.page_size ?? 'default'}, page_token=${p.page_token ?? 'none'}`,
               );
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_vc_meeting_record.search',
-                (sdk, opts) =>
-                  sdk.vc.meetingRecording.list(
-                    {
-                      params: {
-                        keyword: p.keyword,
-                        start_time: p.start_time,
-                        end_time: p.end_time,
-                        page_size: p.page_size,
-                        page_token: p.page_token,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                '/open-apis/vc/v1/meeting_list',
+                {
+                  method: 'GET',
+                  query: {
+                    ...(p.start_time ? { start_time: p.start_time } : {}),
+                    ...(p.end_time ? { end_time: p.end_time } : {}),
+                    ...(p.keyword ? { meeting_no: p.keyword } : {}),
+                    ...(p.page_size != null ? { page_size: String(p.page_size) } : {}),
+                    ...(p.page_token ? { page_token: p.page_token } : {}),
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -155,16 +153,13 @@ export function registerFeishuVcMeetingRecordTool(api: OpenClawPluginApi) {
 
               log.info(`get: meeting_record_id=${p.meeting_record_id}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_vc_meeting_record.get',
-                (sdk, opts) =>
-                  sdk.vc.meetingRecording.get(
-                    {
-                      path: { meeting_record_id: p.meeting_record_id },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/vc/v1/meeting_list/${encodeURIComponent(p.meeting_record_id)}`,
+                {
+                  method: 'GET',
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 

@@ -210,22 +210,19 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
             case 'create': {
               log.info(`create: mailbox=${mailboxId}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.create',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.create(
-                    {
-                      path: { user_mailbox_id: mailboxId },
-                      data: {
-                        to: p.to,
-                        subject: p.subject,
-                        body_html: p.body_html,
-                        body_plain_text: p.body_plain_text,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft/create`,
+                {
+                  method: 'POST',
+                  body: {
+                    to: p.to,
+                    subject: p.subject,
+                    body_html: p.body_html,
+                    body_plain_text: p.body_plain_text,
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -249,19 +246,13 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
 
               log.info(`get: mailbox=${mailboxId}, draft_id=${p.draft_id}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.get',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.get(
-                    {
-                      path: {
-                        user_mailbox_id: mailboxId,
-                        draft_id: p.draft_id,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft/${encodeURIComponent(p.draft_id)}`,
+                {
+                  method: 'GET',
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -284,24 +275,18 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
 
               log.info(`update: mailbox=${mailboxId}, draft_id=${p.draft_id}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.update',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.update(
-                    {
-                      path: {
-                        user_mailbox_id: mailboxId,
-                        draft_id: p.draft_id,
-                      },
-                      data: {
-                        to: p.to,
-                        subject: p.subject,
-                        body_html: p.body_html,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft/${encodeURIComponent(p.draft_id)}`,
+                {
+                  method: 'PUT',
+                  body: {
+                    to: p.to,
+                    subject: p.subject,
+                    body_html: p.body_html,
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -325,19 +310,13 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
 
               log.info(`send: mailbox=${mailboxId}, draft_id=${p.draft_id}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.send',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.send(
-                    {
-                      path: {
-                        user_mailbox_id: mailboxId,
-                        draft_id: p.draft_id,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft/${encodeURIComponent(p.draft_id)}/send`,
+                {
+                  method: 'POST',
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -361,19 +340,13 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
 
               log.info(`delete: mailbox=${mailboxId}, draft_id=${p.draft_id}`);
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.delete',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.delete(
-                    {
-                      path: {
-                        user_mailbox_id: mailboxId,
-                        draft_id: p.draft_id,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft/${encodeURIComponent(p.draft_id)}`,
+                {
+                  method: 'DELETE',
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
@@ -393,20 +366,17 @@ export function registerFeishuMailDraftTool(api: OpenClawPluginApi) {
                 `list: mailbox=${mailboxId}, page_size=${p.page_size ?? 'default'}, page_token=${p.page_token ?? 'none'}`,
               );
 
-              const res = await client.invoke(
+              const res = await client.invokeByPath(
                 'feishu_mail_draft.list',
-                (sdk, opts) =>
-                  sdk.mail.userMailboxMessageDraft.list(
-                    {
-                      path: { user_mailbox_id: mailboxId },
-                      params: {
-                        page_size: p.page_size,
-                        page_token: p.page_token,
-                      },
-                    },
-                    opts,
-                  ),
-                { as: 'user' },
+                `/open-apis/mail/v1/mailboxes/${encodeURIComponent(mailboxId)}/messages/draft`,
+                {
+                  method: 'GET',
+                  query: {
+                    ...(p.page_size != null ? { page_size: String(p.page_size) } : {}),
+                    ...(p.page_token ? { page_token: p.page_token } : {}),
+                  },
+                  as: 'user',
+                },
               );
               assertLarkOk(res);
 
