@@ -159,7 +159,15 @@ export type ToolActionKey =
   | 'feishu_sheet.append'
   | 'feishu_sheet.find'
   | 'feishu_sheet.create'
-  | 'feishu_sheet.export';
+  | 'feishu_sheet.export'
+  | 'feishu_approval_instance.get'
+  | 'feishu_approval_instance.list'
+  | 'feishu_approval_instance.cancel'
+  | 'feishu_approval_instance.cc'
+  | 'feishu_approval_task.query'
+  | 'feishu_approval_task.approve'
+  | 'feishu_approval_task.reject'
+  | 'feishu_approval_task.transfer';
 /**
  * Tool Scope 映射类型
  *
@@ -340,6 +348,16 @@ export const TOOL_SCOPES: ToolScopeMapping = {
     'sheets:spreadsheet:write_only',
   ],
   'feishu_sheet.export': ['docs:document:export'],
+
+  // Approval tools
+  'feishu_approval_instance.get': ['approval:approval'],
+  'feishu_approval_instance.list': ['approval:approval'],
+  'feishu_approval_instance.cancel': ['approval:approval'],
+  'feishu_approval_instance.cc': ['approval:approval'],
+  'feishu_approval_task.query': ['approval:approval'],
+  'feishu_approval_task.approve': ['approval:approval'],
+  'feishu_approval_task.reject': ['approval:approval'],
+  'feishu_approval_task.transfer': ['approval:approval'],
 } as const;
 
 // ===== 必需的应用身份权限 =====
@@ -472,8 +490,8 @@ export function filterSensitiveScopes(scopes: string[]): string[] {
 // ===== 统计信息 =====
 
 /**
- * 工具动作总数: 96
- * 唯一 scope 总数: 74
+ * 工具动作总数: 104
+ * 唯一 scope 总数: 75
  * 必需应用权限总数: 20
  * 高敏感权限总数: 4
  */

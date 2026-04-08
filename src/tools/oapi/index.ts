@@ -35,6 +35,10 @@ import { registerGetUserTool, registerSearchUserTool } from './common/index';
 import { registerFeishuSearchTools } from './search/index';
 import { registerFeishuDriveTools } from './drive/index';
 import { registerFeishuWikiTools } from './wiki/index';
+import {
+  registerFeishuApprovalInstanceTool,
+  registerFeishuApprovalTaskTool,
+} from './approval/index';
 
 import { registerFeishuSheetsTools } from './sheets/index';
 // import { registerFeishuOkrTools } from "./okr/index";
@@ -87,5 +91,9 @@ export function registerOapiTools(api: OpenClawPluginApi): void {
   // IM tools (bot identity)
   registerFeishuImBotTools(api);
 
-  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im)');
+  // Approval tools
+  registerFeishuApprovalInstanceTool(api);
+  registerFeishuApprovalTaskTool(api);
+
+  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im, approval)');
 }
