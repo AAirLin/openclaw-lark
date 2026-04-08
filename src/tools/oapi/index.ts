@@ -31,7 +31,12 @@ import {
   registerFeishuBitableAppTool,
 } from './bitable/index';
 import { registerGetUserTool, registerSearchUserTool } from './common/index';
-// import { registerFeishuMailTools } from "./mail/index";
+import {
+  registerFeishuMailMessageTool,
+  registerFeishuMailDraftTool,
+} from './mail/index';
+import { registerFeishuVcMeetingRecordTool } from './vc/index';
+import { registerFeishuMinutesMinuteTool } from './minutes/index';
 import { registerFeishuSearchTools } from './search/index';
 import { registerFeishuDriveTools } from './drive/index';
 import { registerFeishuWikiTools } from './wiki/index';
@@ -95,5 +100,15 @@ export function registerOapiTools(api: OpenClawPluginApi): void {
   registerFeishuApprovalInstanceTool(api);
   registerFeishuApprovalTaskTool(api);
 
-  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im, approval)');
+  // Mail tools
+  registerFeishuMailMessageTool(api);
+  registerFeishuMailDraftTool(api);
+
+  // VC tools
+  registerFeishuVcMeetingRecordTool(api);
+
+  // Minutes tools
+  registerFeishuMinutesMinuteTool(api);
+
+  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im, approval, mail, vc, minutes)');
 }
