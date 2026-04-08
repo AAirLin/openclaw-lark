@@ -182,7 +182,9 @@ export type ToolActionKey =
   | 'feishu_minutes_minute.get'
   | 'feishu_minutes_minute.statistics'
   | 'feishu_vc_meeting_record.search'
-  | 'feishu_vc_meeting_record.get';
+  | 'feishu_vc_meeting_record.get'
+  | 'feishu_whiteboard_node.create'
+  | 'feishu_whiteboard_node.list';
 /**
  * Tool Scope 映射类型
  *
@@ -396,6 +398,10 @@ export const TOOL_SCOPES: ToolScopeMapping = {
   // VC meeting record tools
   'feishu_vc_meeting_record.search': ['vc:meeting_list:readonly'],
   'feishu_vc_meeting_record.get': ['vc:meeting_list:readonly'],
+
+  // Whiteboard node tools
+  'feishu_whiteboard_node.create': ['board:whiteboard:node:create'],
+  'feishu_whiteboard_node.list': ['board:whiteboard:node:read'],
 } as const;
 
 // ===== 必需的应用身份权限 =====

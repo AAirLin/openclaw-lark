@@ -44,6 +44,7 @@ import {
   registerFeishuApprovalInstanceTool,
   registerFeishuApprovalTaskTool,
 } from './approval/index';
+import { registerFeishuWhiteboardNodeTool } from './whiteboard/index';
 
 import { registerFeishuSheetsTools } from './sheets/index';
 // import { registerFeishuOkrTools } from "./okr/index";
@@ -110,5 +111,8 @@ export function registerOapiTools(api: OpenClawPluginApi): void {
   // Minutes tools
   registerFeishuMinutesMinuteTool(api);
 
-  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im, approval, mail, vc, minutes)');
+  // Whiteboard tools
+  registerFeishuWhiteboardNodeTool(api);
+
+  api.logger.debug?.('Registered all OAPI tools (calendar, task, bitable, search, drive, wiki, sheets, im, approval, mail, vc, minutes, whiteboard)');
 }

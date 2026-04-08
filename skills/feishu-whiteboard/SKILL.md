@@ -143,25 +143,27 @@ npx -y @larksuite/whiteboard-cli@^0.1.0 -i skeleton.json -o ./images/step1.png -
 
 > [!CAUTION]
 > **MANDATORY PRE-FLIGHT CHECK (上传前强制拦截检查)**
-> 当你要向一个**已存在的画板 Token** 写入内容时，**绝对禁止**直接执行上传命令！你必须严格遵守以下两步：
+> 当你要向一个**已存在的画板 Token** 写入内容时，**绝对禁止**直接上传！你必须严格遵守以下两步：
 > **强制执行 Dry Run（状态探测）**
-> 必须先在命令中添加 `--overwrite --dry-run` 参数来探测画板当前状态。示例命令：
-> ```bash
-> npx -y @larksuite/whiteboard-cli@^0.1.0 --to openapi -i <输入文件> --format json | lark-cli docs +whiteboard-update --whiteboard-token <Token> --overwrite --dry-run --as user
-> ```
+> 必须先使用 `feishu_whiteboard_node` 工具的 `list` action 查询画板现有节点：
+> - 使用 `feishu_whiteboard_node` action=list，传入 whiteboard_id
 >
 > **解析结果并拦截**
-> - 仔细阅读 Dry Run 的输出日志。
-> - **如果日志包含 `XX whiteboard nodes will be deleted`**：这说明画板**非空**，当前操作会覆盖并摧毁用户的原有图表！
-> - **你必须立即停止操作**，并通过 `AskUserQuestion` 工具（或直接回复）向用户确认：”目标画板当前非空，继续更新将清空原有的 XX 个节点，是否确认覆盖？”
-> - 只有在用户明确授权”同意覆盖”后，你才能移除 `--dry-run` 真正执行上传。
-> - 用户可能会要求你不覆盖更新画板内容，在这种情况下，移除 `--overwrite` 和 `--dry-run` 参数再上传。
+> - 仔细检查返回的节点列表。
+> - **如果画板已有节点**：这说明画板**非空**，当前操作会覆盖并摧毁用户的原有图表！
+> - **你必须立即停止操作**，并通过 `AskUserQuestion` 工具（或直接回复）向用户确认：”目标画板当前非空，继续更新将清空原有节点，是否确认覆盖？”
+> - 只有在用户明确授权”同意覆盖”后，你才能真正执行上传。
 
 ```bash
-npx -y @larksuite/whiteboard-cli@^0.1.0 --to openapi -i <输入文件> --format json | lark-cli docs +whiteboard-update --whiteboard-token <画板Token> --yes --as user
+# 1. 渲染为 openapi 格式 JSON：
+npx -y @larksuite/whiteboard-cli@^0.1.0 --to openapi -i <输入文件> --format json -o /tmp/nodes.json
+
+# 2. 使用 feishu_whiteboard_node 工具上传：
+#    action: create
+#    whiteboard_id: <画板Token>
+#    nodes: (读取 /tmp/nodes.json 的内容)
 ```
-> 画板一经上传不可修改。如需应用身份上传，将 `--as user` 替换为 `--as bot`。
-> 如果画板非空，先加 `--overwrite --dry-run` 检查待删除节点数，向用户确认后去掉 `--dry-run` 执行。
+> 画板一经上传不可修改。
 
 **症状→修复表**（视觉审查发现问题时参照）：
 
