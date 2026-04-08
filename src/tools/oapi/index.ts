@@ -32,8 +32,8 @@ import {
 } from './bitable/index';
 import { registerGetUserTool, registerSearchUserTool } from './common/index';
 import {
-  registerFeishuMailMessageTool,
   registerFeishuMailDraftTool,
+  registerFeishuMailMessageTool,
 } from './mail/index';
 import { registerFeishuVcMeetingRecordTool } from './vc/index';
 import { registerFeishuMinutesMinuteTool } from './minutes/index';
